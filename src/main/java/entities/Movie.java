@@ -8,7 +8,7 @@ public class Movie {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id;
+    private Long id;
 
     @Column
     private String Title;
@@ -17,11 +17,11 @@ public class Movie {
     @JoinColumn(name = "genre_id", nullable = false)
     private Genre genre;
 
-    public int getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(Long id) {
         this.id = id;
     }
 

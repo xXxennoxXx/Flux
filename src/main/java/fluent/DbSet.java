@@ -1,186 +1,49 @@
 package fluent;
 
-import entities.Movie;
-
-import java.lang.reflect.Field;
-import java.lang.reflect.ParameterizedType;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.function.Predicate;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
-import static utils.StringUtil.show;
+public class DbSet<T> {
 
-public class DbSet<T> extends HashSet<T> {
-
-    private String query;
-    private Where<T> w1;
-    private Object o1;
-    private Supplier<T> supplier;
-    private T t;
+    private final Supplier<T> supplier;
+    private final List<SqlStatement<T>> statements;
 
     public DbSet(Supplier<T> supplier) {
-        this.query = "Query: ";
         this.supplier = supplier;
+        statements = new ArrayList<>();
     }
 
+    void addStatement(SqlStatement<T> statement) {
+        statements.add(statement);
+    }
 
-    public DbSet<T> where(Where<T> w) {
-        w1 = w;
+    //    TODO O Co chodzi
+    @SafeVarargs
+    public final DbSet<T> select(Function<T, Object>... functions) {
+        SqlStatement<T> statement = new SelectStatement<>(supplier, this, functions);
+        addStatement(statement);
+        SqlStatement<T> statement2 = new FromStatement<>(supplier, this);
+        addStatement(statement2);
         return this;
     }
 
-    public DbSet<T> eq(Object o) {
-
-        o1 = o;
-        return this;
+    public WhereStatement<T> where(Function<T, Object> function) {
+        return new WhereStatement<>(supplier, function, this);
     }
 
-    //Wyciagnac wartosc predicate.test ze srodka?
-    public DbSet<T> whereOld(Predicate<T> predicate) {
-        query.concat(predicate.toString());
-//        predicate.getClass().
-        return this;
+    public OrderStatement<T> orderBy(Function<T, Object> function) {
+        return new OrderStatement<>(supplier, function, this);
     }
 
-
-    public String toQuery() {
-        t = supplier.get();
-        Field[] declaredFields = t.getClass().getDeclaredFields();
-
-        Field declaredField = declaredFields[0];
-        show(declaredField.getName(),
-                declaredField.hashCode(),
-                declaredField.toString(),
-                declaredField.getAnnotatedType(),
-                declaredField.getDeclaringClass(),
-                declaredField.getGenericType(),
-                declaredField.isAccessible(),
-                declaredField.getModifiers(),
-                "-------------------");
-
-        Object apply = w1.apply(t);
-
-
-//        show(apply.hashCode(),
-//                declaredField.hashCode(),
-//        "-------------------");
-        boolean found = false;
-        String name = "";
-        int m, n;
-        try {
-
-            for (Field field : declaredFields) {
-                declaredField = field;
-                declaredField.setAccessible(true);
-                Object o = declaredField.get(t);
-                if (o == null) {
-                    declaredField.set(t, declaredField.getType().newInstance());
-                    try {
-                        m = w1.apply(t).hashCode();
-                        set(declaredField);
-                        n = w1.apply(t).hashCode();
-                        if (m != n) {
-                            name =
-                                    declaredField.getName();
-                            found = true;
-                        } else if (!found) {
-                            name = declaredField.getName();
-                            found = true;
-                        }
-                    } catch (NullPointerException e) {
-                    }
-
-                } else {
-                    try {
-                        m = w1.apply(t).hashCode();
-                        set(declaredField);
-                        n = w1.apply(t).hashCode();
-                        if (m != n) {
-                            name =
-                                    declaredField.getName();
-                            found = true;
-                        }
-                    } catch (NullPointerException e) {
-                    }
-                }
-            }
-            show("-----------------",
-                    "Query: " + name + " : " + o1.toString(),
-                    "-----------------");
-        } catch (IllegalAccessException | InstantiationException e) {
-            e.printStackTrace();
-        }
-
-        int length = t
-                .getClass()
-                .getName()
-                .split("\\.").length;
-        show(Arrays.toString(
-                t.getClass()
-                        .getName()
-                        .split("\\.")
-        ));
-
+    @Override
+    public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb
-                .append("SELECT")
-                .append(" * ")
-                .append("FROM ")
-                .append(t
-                        .getClass()
-                        .getName()
-                        .split("\\.")[length - 1]
-                )
-                .append("\n")
-                .append("WHERE")
-                .append(" ")
-                .append(name)
-                .append(" = ")
-                .append(o1.toString());
-//.split(".")
-//                        [t
-//                        .getClass()
-//                        .getName()
-//                        .split(".")
-//                        .length - 1])
-
+        for (SqlStatement<T> s : statements) {
+            sb.append("\n")
+                    .append(s.toString());
+        }
         return sb.toString();
     }
-
-    interface Where<T> {
-        public Object apply(T t);
-    }
-
-    private String set(Field field) throws IllegalAccessException {
-        String type = field.getType().toString();
-        if (type.equals("int")) {
-            field.set(t, 1);
-            return "int";
-        } else if (type.equals("byte")) {
-            field.set(t, (byte) 1);
-            return "byte";
-        } else if (type.equals("short")) {
-            field.set(t, (short) 1);
-            return "short";
-        } else if (type.equals("long")) {
-            field.set(t, (long) 1);
-            return "long";
-        } else if (type.equals("float")) {
-            field.set(t, (float) 1);
-            return "float";
-        } else if (type.equals("double")) {
-            field.set(t, (double) 1);
-            return "double";
-        } else if (type.equals("boolean")) {
-            field.set(t, true);
-            return "boolean";
-        } else if (type.equals("char")) {
-            field.set(t, (char) 1);
-            return "char";
-        }
-        return "null";
-
-    }
-
 }
