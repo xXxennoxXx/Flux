@@ -1,17 +1,17 @@
 package fluent;
 
 import entities.Movie;
+import fluent.translators.Dialect;
 import repo.Repo;
-
-import java.util.function.Supplier;
 
 public class Context extends Repo {
 
 
 
-    public DbSet<Movie> movies;
+    public Flux<Movie> movies;
 
     public Context() {
-        this.movies = new DbSet<>(Movie::new);
+        this.movies = new Flux<>(Dialect.SQL_SERVER, Movie::new);
     }
 }
+

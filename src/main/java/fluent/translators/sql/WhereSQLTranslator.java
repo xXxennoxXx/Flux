@@ -1,32 +1,25 @@
-package fluent;
+package fluent.translators.sql;
 
-import java.util.Arrays;
+import fluent.Flux;
+import fluent.WhereType;
+import fluent.translators.WhereTranslator;
 
-public class WhereCondition {
-    enum Type {IN, NOT_IN, BETWEEN, NOT_BETWEEN, EQUAL, NOT_EQUAL, LESS_THEN, GREATER_THEN}
-
-    private Type type;
-    private Object one, bottom, top;
-    private Object[] in;
-
-    public WhereCondition(Type type, Object one) {
-        this.type = type;
-        this.one = one;
+public class WhereSQLTranslator extends WhereTranslator {
+    public WhereSQLTranslator(WhereType type, Object one) {
+        super(type, one);
     }
 
-    public WhereCondition(Type type, Object bottom, Object top) {
-        this.type = type;
-        this.bottom = bottom;
-        this.top = top;
+    public WhereSQLTranslator(WhereType type, Object bottom, Object top) {
+        super(type, bottom, top);
     }
 
-    public WhereCondition(Type type, Object[] in) {
-        this.type = type;
-        this.in = in;
+    public WhereSQLTranslator(WhereType type, Object[] in) {
+        super(type, in);
     }
+
 
     @Override
-    public String toString() {
+    public <T> String translate(Flux<T> flux) {
         StringBuilder sb = new StringBuilder();
 
         switch (type) {
@@ -66,7 +59,5 @@ public class WhereCondition {
                 sb.append("Something want wrong.");
         }
         return sb.toString();
-
-
     }
 }

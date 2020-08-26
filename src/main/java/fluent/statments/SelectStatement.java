@@ -1,18 +1,19 @@
-package fluent;
+package fluent.statments;
+
+import fluent.Flux;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public class SelectStatement<T> extends SqlStatement<T> {
-    private List<Object> fields;
+public class SelectStatement<T> extends Statement<T> {
 
-    public SelectStatement(Supplier<T> supplier, DbSet<T> dbSet, Function<T, Object>... functions) {
-        super(supplier, dbSet);
+    public SelectStatement(Supplier<T> supplier, Flux<T> flux, Function<T, Object>... functions) {
+        super(supplier, flux);
         fields = new ArrayList<>();
         for (Function<T, Object> function : functions)
-            fields.add(getAttributeName(function));
+            fields.add(getFieldHolder(function));
     }
 
     @Override

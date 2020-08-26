@@ -1,5 +1,7 @@
 package fluent.evaluators;
 
+import fluent.fieldholders.FieldHolder;
+
 import java.lang.reflect.Field;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -21,8 +23,7 @@ public class FieldEvaluator<T> {
         initializeParameterClassAttribute();
     }
 
-    public String findQueryField(Function<T, Object> function) {
-
+    public FieldHolder findQueryField(Function<T, Object> function) {
 
         this.function = function;
         initializeParameterClassAttribute();
@@ -30,7 +31,7 @@ public class FieldEvaluator<T> {
         for (Field f : getParameterClassFields()) {
             field = evaluateWhichAttribute(t, f);
             if (field != null)
-                return t.getClass().getSimpleName() + "." + field.getName();
+                return new FieldHolder(t.getClass().getSimpleName(), field);
         }
         for (Field customField : getCustomFieldsInParameterClass(getParameterClassFields())) {
             Field[] fields = customField.getType().getDeclaredFields();
@@ -45,10 +46,10 @@ public class FieldEvaluator<T> {
             for (Field innerField : fields) {
                 field = evaluateWhichAttribute(o, innerField);
                 if (field != null)
-                    return t.getClass().getSimpleName() + "." + customField.getName() + "." + field.getName();
+                    return new FieldHolder(t.getClass().getSimpleName(), customField, field);
             }
         }
-        return "Cos nie tak";
+        return null;
     }
 
     private Field evaluateWhichAttribute(Object o, Field field) {

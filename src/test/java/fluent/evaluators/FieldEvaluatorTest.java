@@ -22,6 +22,7 @@ public class FieldEvaluatorTest {
                 ev.findQueryField(e -> e.getGenre().getMovies()),
                 ev.findQueryField(e -> e.getGenre().getMovies().size()),
                 ev.findQueryField(e -> e.getMovie().getGenre())
+//                ev.findQueryField(e->e.)
         );
 
 

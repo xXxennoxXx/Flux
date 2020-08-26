@@ -1,8 +1,10 @@
 package fluent.evaluators;
 
 public enum FieldType {
-    INTEGER(new Integer(1), new Integer(2)),
-    LONG(new Integer(1), new Long(2)),
+    INTEGER(new Integer(1),
+            new Integer(2)),
+    LONG(new Integer(1),
+            new Long(2)),
     STRING(new String("Ala ma kota."), new String("A kot ma Ale.")),
     CUSTOM(null, null);
 

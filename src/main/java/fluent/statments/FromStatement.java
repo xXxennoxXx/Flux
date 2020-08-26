@@ -1,13 +1,15 @@
-package fluent;
+package fluent.statments;
+
+import fluent.Flux;
 
 import java.util.function.Supplier;
 
 
-public class FromStatement<T> extends SqlStatement<T> {
+public class FromStatement<T> extends Statement<T> {
     private Supplier<T> supplier;
 
-    public FromStatement(Supplier<T> supplier, DbSet<T> dbSet) {
-        super(supplier, dbSet);
+    public FromStatement(Supplier<T> supplier, Flux<T> flux) {
+        super(supplier, flux);
         this.supplier = supplier;
     }
 
