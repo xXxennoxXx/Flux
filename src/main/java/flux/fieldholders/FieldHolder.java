@@ -3,6 +3,7 @@ package flux.fieldholders;
 import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 public class FieldHolder {
 
@@ -63,5 +64,30 @@ public class FieldHolder {
         if (subField == null)
             return new String(classChar + "." + mainField.getName());
         return new String(getChar(mainField.getType().getSimpleName()) + "." + subField.getName());
+    }
+
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        FieldHolder that = (FieldHolder) o;
+        if (subField != null && that.subField != null)
+            return Objects.equals(className, that.className) &&
+                    Objects.equals(classChar, that.classChar) &&
+                    Objects.equals(mainField.getName(), that.mainField.getName()) &&
+                    Objects.equals(subField.getName(), that.subField.getName());
+        else if (subField != null || that.subField != null)
+            return false;
+        else
+            return Objects.equals(className, that.className) &&
+                    Objects.equals(classChar, that.classChar) &&
+                    Objects.equals(mainField.getName(), that.mainField.getName());
+
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(className, classChar, mainField.getName());
     }
 }

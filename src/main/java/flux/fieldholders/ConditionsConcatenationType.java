@@ -1,11 +1,11 @@
 package flux.fieldholders;
 
-public enum WhereConcatOperatorEnum {
+public enum ConditionsConcatenationType {
     AND("AND"), OR("OR");
 
     String name;
 
-    WhereConcatOperatorEnum(String name) {
+    ConditionsConcatenationType(String name) {
         this.name = name;
     }
 

@@ -1,31 +1,33 @@
 package flux.translators.hibernate;
 
 import flux.fieldholders.FieldHolder;
+import flux.fieldholders.FromFieldHolder;
 import flux.translators.FromTranslator;
 
+import java.util.List;
 import java.util.Map;
 
 public class FromHibernateTranslator implements FromTranslator {
 
 
     @Override
-    public String translate(String className) {
-
-        Map<String, String> charToClass = FieldHolder.getCharToClass();
-        String s = charToClass.get(className);
-
-        if (s == null)
-            s = "";
-
+    public String translate(List<FromFieldHolder> fromFields) {
         StringBuilder sb = new StringBuilder();
+        sb.append("FROM");
+        Map<String, String> charToClass = FieldHolder.getCharToClass();
+        for (FromFieldHolder fromFieldHolder : fromFields) {
+            String className = fromFieldHolder.getFieldHolder().getClassName();
+            String s = charToClass.get(className);
 
-        sb.append("FROM")
-                .append("\n\t")
-                .append(className)
-                .append(" ")
-                .append(s)
-                .append("\n");
-
+            sb
+                    .append("\n\t")
+                    .append(className)
+                    .append(" ")
+                    .append(s)
+                    .append(",");
+        }
+        sb.deleteCharAt(sb.length() - 1);
+        sb.append("\n");
         return sb.toString();
     }
 }

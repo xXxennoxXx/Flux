@@ -1,28 +1,49 @@
 package flux.statments;
 
 import flux.Flux;
-import flux.JoinType;
-import flux.fieldholders.JoinFieldHolder;
 
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 public class JoinStatement<T> extends Statement<T> {
 
-    private final JoinType joinType;
-    private final JoinFieldHolder joinFieldHolder;
-
-    public JoinStatement(Supplier<T> supplier, Flux<T> flux, Function<T, Object> function, JoinType joinType) {
-        super(supplier, flux);
-        this.joinType = joinType;
-        joinFieldHolder = new JoinFieldHolder(getFieldHolder(function), joinType);
+    public JoinStatement(Flux<T> flux) {
+        super(flux);
     }
 
-    public JoinType getJoinType() {
-        return joinType;
+    @SafeVarargs
+    public final JoinStatement<T> join(Function<T, Object>... functions) {
+        return flux.join(functions);
     }
 
-    public JoinFieldHolder getJoinFieldHolder() {
-        return joinFieldHolder;
+    @SafeVarargs
+    public final JoinStatement<T> leftJoin(Function<T, Object>... functions) {
+        return flux.leftJoin(functions);
+
+    }
+
+    @SafeVarargs
+    public final JoinStatement<T> rightJoin(Function<T, Object>... functions) {
+        return flux.rightJoin(functions);
+
+    }
+
+    @SafeVarargs
+    public final JoinStatement<T> fullJoin(Function<T, Object>... functions) {
+        return flux.fullJoin(functions);
+    }
+
+
+    public WhereCondition<T> where(Function<T, Object> function) {
+        return flux.where(function);
+    }
+
+
+    @SafeVarargs
+    public final GroupByStatement<T> groupBy(Function<T, Object>... functions) {
+        return flux.groupBy(functions);
+    }
+
+    public OrderByStatement<T> orderBy(Function<T, Object> function) {
+        return flux.orderBy(function);
     }
 }

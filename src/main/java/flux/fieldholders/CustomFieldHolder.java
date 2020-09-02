@@ -1,6 +1,6 @@
 package flux.fieldholders;
 
-public class CustomFieldHolder {
+public abstract class CustomFieldHolder {
 
     protected final FieldHolder fieldHolder;
 
@@ -10,5 +10,9 @@ public class CustomFieldHolder {
 
     public FieldHolder getFieldHolder() {
         return fieldHolder;
+    }
+
+    public String returnName() {
+        return fieldHolder.returnName();
     }
 }

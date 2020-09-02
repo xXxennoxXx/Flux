@@ -15,7 +15,7 @@ public class JoinFieldHolder extends CustomFieldHolder {
 
     public String returnName() {
 
-        String s = fieldHolder.returnName();
+        String s = fieldHolder.getClassChar() + "." + fieldHolder.getMainField().getName();
 
         s = s.concat(" ");
         String simpleName = fieldHolder.getMainField().getType().getSimpleName();

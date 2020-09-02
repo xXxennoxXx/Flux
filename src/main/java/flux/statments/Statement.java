@@ -8,28 +8,20 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public class Statement<T> {
+public class Statement<T> extends Condition<T> {
 
-    private final FieldEvaluator<T> fieldEvaluator;
-    protected final Flux<T> flux;
-    protected FieldHolder fieldHolder;
-    protected List<FieldHolder> fields;
 
-    public Statement(Supplier<T> supplier, Flux<T> flux) {
-        this.fieldEvaluator = new FieldEvaluator<>(supplier);
-        this.flux = flux;
+    public Statement(Flux<T> flux) {
+        super(flux);
     }
 
-    public FieldHolder getFieldHolder(Function<T, Object> function) {
-        return fieldEvaluator.findQueryField(function);
+    public List<T> toList() throws Exception {
+        return flux.toList();
+    }
+
+    public String toQuery()  {
+        return flux.toQuery();
     }
 
 
-    public FieldHolder getFieldHolder() {
-        return fieldHolder;
-    }
-
-    public List<FieldHolder> getFields() {
-        return fields;
-    }
 }

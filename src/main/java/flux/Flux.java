@@ -1,11 +1,13 @@
 package flux;
 
-import flux.checkers.EnumCheckList;
-import flux.fieldholders.WhereConcatOperatorEnum;
+import flux.checkers.QueryChecklist;
+import flux.evaluators.FieldEvaluator;
+import flux.fieldholders.*;
 import flux.statments.*;
 import flux.translators.Dialect;
 import flux.translators.Translator;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
@@ -14,91 +16,168 @@ import java.util.function.Supplier;
 //TODO Zeby zapewnic sensowane API biblioteki wszystko powinno byc w jednej paczce?
 
 
-public class Flux<T> {
+public abstract class Flux<T> {
 
     private final Dialect dialect;
     private final Supplier<T> supplier;
-    private SelectStatement<T> selectStatement;
-    private FromStatement<T> fromStatement;
-    private List<JoinStatement<T>> joinStatements;
-    private WhereStatement<T> whereStatement;
-    private GroupByStatement<T> groupByStatement;
-    private HavingStatement<T> havingStatement;
-    private List<OrderByStatement<T>> orderByStatements;
+
+
+    private final List<SelectFieldHolder> selectFields = new ArrayList<>();
+    private final List<FromFieldHolder> fromFields = new ArrayList<>();
+    private final List<JoinFieldHolder> joinFields = new ArrayList<>();
+    private final List<WhereFieldHolder> whereFields = new ArrayList<>();
+    private final List<GroupByFieldHolder> groupByFields = new ArrayList<>();
+    private final List<HavingFieldHolder> havingFields = new ArrayList<>();
+    private final List<OrderByFieldHolder> orderByFields = new ArrayList<>();
+
+    private final FieldEvaluator<T> fieldEvaluator;
+
 
     public Flux(Dialect dialect, Supplier<T> supplier) {
         this.dialect = dialect;
         this.supplier = supplier;
 
-        orderByStatements = new ArrayList<>();
-        joinStatements = new ArrayList<>();
+        fieldEvaluator = new FieldEvaluator<>(supplier);
     }
 
-    //    TODO O Co chodzi
+
+    //TODO
+    @SafeVarargs
+    public final SelectStatement<T> select(Function<T, Object>... functions) {
+        return select(null, functions);
+    }
 
     @SafeVarargs
-    public final Flux<T> select(Function<T, Object>... functions) {
-        selectStatement = new SelectStatement<T>(supplier, this, functions);
-        return this;
+    public final SelectStatement<T> select(AggregateFunctionType aggregateFunctionType, Function<T, Object>... functions) {
+        for (Function<T, Object> function : functions) {
+            FieldHolder queryField = evaluateQueryField(function);
+            SelectFieldHolder selectFieldHolder = new SelectFieldHolder(queryField);
+            selectFieldHolder.setAggregateFunctionType(aggregateFunctionType);
+            selectFields.add(selectFieldHolder);
+        }
+        return new SelectStatement<>(this);
+    }
+
+    @SafeVarargs
+    public final FromStatement<T> from(Function<T, Object>... functions) {
+        for (Function<T, Object> function : functions) {
+            FieldHolder queryField = evaluateQueryField(function);
+            FromFieldHolder fromFieldHolder = new FromFieldHolder(queryField);
+            fromFields.add(fromFieldHolder);
+        }
+        return new FromStatement<>(this);
+    }
+
+
+    @SafeVarargs
+    public final JoinStatement<T> join(Function<T, Object>... functions) {
+        addJoinFields(JoinType.INNER, functions);
+        return new JoinStatement<>(this);
+    }
+
+    @SafeVarargs
+    public final JoinStatement<T> leftJoin(Function<T, Object>... functions) {
+        addJoinFields(JoinType.LEFT_OUTER, functions);
+        return new JoinStatement<>(this);
 
     }
 
-    public Flux<T> join(Function<T, Object> function) {
-        joinStatements.add(new JoinStatement<>(supplier, this, function, JoinType.INNER));
-        return this;
-    }
-
-    public Flux<T> leftJoin(Function<T, Object> function) {
-        joinStatements.add(new JoinStatement<>(supplier, this, function, JoinType.LEFT_OUTER));
-        return this;
+    @SafeVarargs
+    public final JoinStatement<T> rightJoin(Function<T, Object>... functions) {
+        addJoinFields(JoinType.RIGHT_OUTER, functions);
+        return new JoinStatement<>(this);
 
     }
 
-    public Flux<T> rightJoin(Function<T, Object> function) {
-        joinStatements.add(new JoinStatement<>(supplier, this, function, JoinType.RIGHT_OUTER));
-        return this;
-
+    @SafeVarargs
+    public final JoinStatement<T> fullJoin(Function<T, Object>... functions) {
+        addJoinFields(JoinType.FULL_OUTER, functions);
+        return new JoinStatement<>(this);
     }
 
-    public Flux<T> fullJoin(Function<T, Object> function) {
-        joinStatements.add(new JoinStatement<>(supplier, this, function, JoinType.FULL_OUTER));
-        return this;
+    @SafeVarargs
+    private final void addJoinFields(JoinType joinType, Function<T, Object>... functions) {
+        for (Function<T, Object> function : functions) {
+            FieldHolder fieldHolder = evaluateQueryField(function);
+            JoinFieldHolder joinFieldHolder = new JoinFieldHolder(fieldHolder, joinType);
+            joinFields.add(joinFieldHolder);
+        }
     }
 
-    public WhereStatement<T> where(Function<T, Object> function) {
-        return whereStatement = new WhereStatement<>(supplier, function, this);
+    public WhereCondition<T> where(Function<T, Object> function) {
+        return newWhereStatement(function);
     }
 
-    public WhereStatement<T> and(Function<T, Object> function) {
-        WhereStatement<T> lastStatement = whereStatement.getLast();
-        lastStatement.setOperator(WhereConcatOperatorEnum.AND);
-        WhereStatement<T> newStatement = new WhereStatement<>(supplier, function, this);
-        lastStatement.setNext(newStatement);
-        return newStatement;
+    public WhereCondition<T> andWhere(Function<T, Object> function) {
+        return newWhereStatement(function, ConditionsConcatenationType.AND);
     }
 
-    public WhereStatement<T> or(Function<T, Object> function) {
-        WhereStatement<T> lastStatement = whereStatement.getLast();
-        lastStatement.setOperator(WhereConcatOperatorEnum.OR);
-        WhereStatement<T> newStatement = new WhereStatement<>(supplier, function, this);
-        lastStatement.setNext(newStatement);
-        return newStatement;
+    public WhereCondition<T> orWhere(Function<T, Object> function) {
+        return newWhereStatement(function, ConditionsConcatenationType.OR);
+    }
+
+    private WhereCondition<T> newWhereStatement(Function<T, Object> function) {
+        return newWhereStatement(function, null);
+    }
+
+    private WhereCondition<T> newWhereStatement(Function<T, Object> function, ConditionsConcatenationType conditionsConcatenationType) {
+        if (conditionsConcatenationType != null) {
+            WhereFieldHolder lastWhereField = whereFields.get(whereFields.size() - 1);
+            lastWhereField.setWhereConcatOperatorEnum(conditionsConcatenationType);
+        }
+        FieldHolder fieldHolder = evaluateQueryField(function);
+        WhereFieldHolder whereFieldHolder = new WhereFieldHolder(fieldHolder);
+        whereFields.add(whereFieldHolder);
+        return new WhereCondition<>(this, whereFieldHolder);
+    }
+
+    @SafeVarargs
+    public final GroupByStatement<T> groupBy(Function<T, Object>... functions) {
+        for (Function<T, Object> function : functions) {
+            FieldHolder queryField = evaluateQueryField(function);
+            GroupByFieldHolder groupByFieldHolder = new GroupByFieldHolder(queryField);
+            groupByFields.add(groupByFieldHolder);
+        }
+        return new GroupByStatement<>(this);
+    }
+
+
+    public HavingAggregateCondition<T> having(Function<T, Object> function) {
+        return newHavingStatement(function);
+    }
+
+    public HavingAggregateCondition<T> andHaving(Function<T, Object> function) {
+        return newHavingStatement(function, ConditionsConcatenationType.AND);
+    }
+
+    public HavingAggregateCondition<T> orHaving(Function<T, Object> function) {
+        return newHavingStatement(function, ConditionsConcatenationType.OR);
+    }
+
+    private HavingAggregateCondition<T> newHavingStatement(Function<T, Object> function) {
+        return newHavingStatement(function, null);
+    }
+
+    private HavingAggregateCondition<T> newHavingStatement(Function<T, Object> function, ConditionsConcatenationType conditionsConcatenationType) {
+        if (conditionsConcatenationType != null) {
+            HavingFieldHolder lastHavingFieldHolder = havingFields.get(havingFields.size() - 1);
+            lastHavingFieldHolder.setConcatenationOperatorTypeType(conditionsConcatenationType);
+        }
+        FieldHolder fieldHolder = evaluateQueryField(function);
+        HavingFieldHolder havingFieldHolder = new HavingFieldHolder(fieldHolder);
+        havingFields.add(havingFieldHolder);
+        return new HavingAggregateCondition<>(this, havingFieldHolder);
     }
 
     public OrderByStatement<T> orderBy(Function<T, Object> function) {
-        OrderByStatement<T> statement = new OrderByStatement<>(supplier, function, this);
-        orderByStatements.add(statement);
-        return statement;
+        FieldHolder fieldHolder = evaluateQueryField(function);
+        OrderByFieldHolder orderByFieldHolder = new OrderByFieldHolder(fieldHolder);
+        orderByFields.add(orderByFieldHolder);
+        return new OrderByStatement<>(this, orderByFieldHolder);
     }
 
-
-    public Dialect getDialect() {
-        return dialect;
-    }
-
-
-    public String toQuery() throws Exception {
-        for (EnumCheckList check : EnumCheckList.values()) {
+    public String toQuery() {
+        for (QueryChecklist check : QueryChecklist.values()) {
             check.check(this);
         }
         Translator translator = getTranslator();
@@ -109,42 +188,19 @@ public class Flux<T> {
     }
 
     private void clean() {
-        selectStatement = null;
-        fromStatement = null;
-        joinStatements.clear();
-        whereStatement = null;
-        groupByStatement = null;
-        havingStatement = null;
-        orderByStatements.clear();
+        selectFields.clear();
+        fromFields.clear();
+        joinFields.clear();
+        whereFields.clear();
+        groupByFields.clear();
+        havingFields.clear();
+        orderByFields.clear();
     }
 
-    public SelectStatement<T> getSelectStatement() {
-        return selectStatement;
+    private FieldHolder evaluateQueryField(Function<T, Object> function) {
+        return fieldEvaluator.findQueryField(function);
     }
 
-    public FromStatement<T> getFromStatement() {
-        return fromStatement;
-    }
-
-    public List<JoinStatement<T>> getJoinStatements() {
-        return joinStatements;
-    }
-
-    public WhereStatement<T> getWhereStatement() {
-        return whereStatement;
-    }
-
-    public GroupByStatement<T> getGroupByStatement() {
-        return groupByStatement;
-    }
-
-    public HavingStatement<T> getHavingStatement() {
-        return havingStatement;
-    }
-
-    public List<OrderByStatement<T>> getOrderByStatements() {
-        return orderByStatements;
-    }
 
     public Translator getTranslator() {
         return dialect.getTranslator();
@@ -154,7 +210,42 @@ public class Flux<T> {
         return supplier.get().getClass().getSimpleName();
     }
 
-    public List<T> toList() throws Exception {
-        return null;
+    public FromFieldHolder getFromFieldHolder() {
+        Class<?> aClass = supplier.get().getClass();
+        Field[] declaredFields = aClass.getDeclaredFields();
+        Field declaredField = declaredFields[0];
+        return new FromFieldHolder(new FieldHolder(getClassName(), declaredField));
     }
+
+    public List<SelectFieldHolder> getSelectFields() {
+        return selectFields;
+    }
+
+    public List<FromFieldHolder> getFromFields() {
+        return fromFields;
+    }
+
+    public List<JoinFieldHolder> getJoinFields() {
+        return joinFields;
+    }
+
+    public List<WhereFieldHolder> getWhereFields() {
+        return whereFields;
+    }
+
+    public List<GroupByFieldHolder> getGroupByFields() {
+        return groupByFields;
+    }
+
+    public List<HavingFieldHolder> getHavingFields() {
+        return havingFields;
+    }
+
+    public List<OrderByFieldHolder> getOrderByFields() {
+        return orderByFields;
+    }
+
+    public abstract List<T> toList() throws Exception;
+
+
 }

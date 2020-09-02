@@ -20,7 +20,7 @@ public class CheckList<T> {
 //            return true;
         }
         {
-            for (EnumCheckList check : EnumCheckList.values())
+            for (QueryChecklist check : QueryChecklist.values())
                 check.check(flux);
 //            return true;
         }

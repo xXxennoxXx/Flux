@@ -1,9 +1,9 @@
 package flux.translators;
 
-import flux.statments.OrderByStatement;
+import flux.fieldholders.OrderByFieldHolder;
 
 import java.util.List;
 
 public interface OrderByTranslator {
-    public <T> String translate(List<OrderByStatement<T>> fields);
+    public  String translate(List<OrderByFieldHolder> fields);
 }

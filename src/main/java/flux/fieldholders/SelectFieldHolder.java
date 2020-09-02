@@ -1,13 +1,26 @@
 package flux.fieldholders;
 
-import java.lang.reflect.Field;
+import flux.AggregateFunctionType;
 
-public class SelectFieldHolder extends FieldHolder {
-    public SelectFieldHolder(String className, Field mainField) {
-        super(className, mainField);
+public class SelectFieldHolder extends CustomFieldHolder {
+    private AggregateFunctionType aggregateFunctionType;
+
+    public SelectFieldHolder(FieldHolder fieldHolder) {
+        this(fieldHolder, null);
     }
 
-    public SelectFieldHolder(String className, Field mainField, Field subField) {
-        super(className, mainField, subField);
+    public SelectFieldHolder(FieldHolder fieldHolder, AggregateFunctionType aggregateFunctionType) {
+        super(fieldHolder);
+        this.aggregateFunctionType = aggregateFunctionType;
     }
+
+    public AggregateFunctionType getAggregateFunctionType() {
+        return aggregateFunctionType;
+    }
+
+    public void setAggregateFunctionType(AggregateFunctionType aggregateFunctionType) {
+        this.aggregateFunctionType = aggregateFunctionType;
+    }
+
+
 }

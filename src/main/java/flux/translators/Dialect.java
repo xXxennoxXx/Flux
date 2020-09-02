@@ -1,10 +1,13 @@
 package flux.translators;
 
+import flux.checkers.QueryHibernateCheckList;
 import flux.translators.hibernate.*;
 import flux.translators.sql.SQLTranslator;
 
 public enum Dialect {
     HIBERNATE {
+
+
         @Override
         public SelectTranslator getSelectTranslator() {
             return new SelectHibernateTranslator();
@@ -27,12 +30,12 @@ public enum Dialect {
 
         @Override
         public GroupByTranslator getGroupByTranslator() {
-            return null;
+            return new GroupByHibernateTranslator();
         }
 
         @Override
         public HavingTranslator getHavingTranslator() {
-            return null;
+            return new HavingHibernateTranslator();
         }
 
         @Override

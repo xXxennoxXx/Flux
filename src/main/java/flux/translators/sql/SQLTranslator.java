@@ -28,12 +28,12 @@ public class SQLTranslator extends Translator {
 
     @Override
     public <T> String translate(Flux<T> flux) {
-        flux.getSelectStatement();
-        flux.getFromStatement();
-        flux.getWhereStatement();
-        flux.getGroupByStatement();
-        flux.getHavingStatement();
-        flux.getOrderByStatements();
+//        flux.getSelectStatement();
+//        flux.getFromStatement();
+//        flux.getWhereStatement();
+//        flux.getGroupByStatement();
+//        flux.getHavingStatement();
+//        flux.getOrderByStatements();
 
         return null;
     }

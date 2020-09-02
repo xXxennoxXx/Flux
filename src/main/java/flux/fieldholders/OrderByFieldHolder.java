@@ -2,18 +2,21 @@ package flux.fieldholders;
 
 import flux.OrderByType;
 
-import java.lang.reflect.Field;
-
-public class OrderByFieldHolder extends FieldHolder {
+public class OrderByFieldHolder extends CustomFieldHolder {
 
     private OrderByType orderByType;
 
-    public OrderByFieldHolder(String className, Field mainField) {
-        super(className, mainField);
+    public OrderByFieldHolder(FieldHolder fieldHolder) {
+        this(fieldHolder, null);
     }
 
-    public OrderByFieldHolder(String className, Field mainField, Field subField) {
-        super(className, mainField, subField);
+    public OrderByFieldHolder(FieldHolder fieldHolder, OrderByType orderByType) {
+        super(fieldHolder);
+        this.orderByType = orderByType;
+    }
+
+    public OrderByType getOrderByType() {
+        return orderByType;
     }
 
     public void setOrderByType(OrderByType orderByType) {

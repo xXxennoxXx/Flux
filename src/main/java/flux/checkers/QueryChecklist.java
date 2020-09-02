@@ -1,37 +1,36 @@
 package flux.checkers;
 
+import flux.ConditionType;
 import flux.Flux;
-import flux.WhereType;
-import flux.fieldholders.FieldHolder;
-import flux.statments.WhereStatement;
+import flux.QueryException;
+import flux.fieldholders.WhereFieldHolder;
+import org.hibernate.HibernateException;
 
 import java.lang.reflect.Field;
+import java.util.List;
 
-public enum EnumCheckList {
+public enum QueryChecklist {
 
     Is_Group_By_Contain_Proper_Select("Select contains the fields which are not in the group by statement.") {
         @Override
-        public <T> boolean check(Flux<T> flux) throws Exception {
-            return true;
+        public <T> void check(Flux<T> flux) throws QueryException {
         }
     },
     Is_Where_Field_Have_Same_Type_With_Condition("Value given in the where condition is/are not proper to the field type.") {
         @Override
-        public <T> boolean check(Flux<T> flux) throws Exception {
+        public <T> void check(Flux<T> flux) throws QueryException {
 
-            WhereStatement<T> whereStatement = flux.getWhereStatement();
+            List<WhereFieldHolder> whereFields = flux.getWhereFields();
+            for (WhereFieldHolder fieldHolder : whereFields) {
 
-            while (whereStatement != null) {
-                FieldHolder fieldHolder = whereStatement.getWhereFieldHolder().getFieldHolder();
+                ConditionType type = fieldHolder.getConditionType();
 
-                WhereType type = whereStatement.getWhereFieldHolder().getWhereType();
-
-                Object values = whereStatement.getWhereFieldHolder().getValues();
+                Object values = fieldHolder.getValues();
 
                 Field field;
-                if (fieldHolder.getSubField() == null)
-                    field = fieldHolder.getMainField();
-                else field = fieldHolder.getSubField();
+                if (fieldHolder.getFieldHolder().getSubField() == null)
+                    field = fieldHolder.getFieldHolder().getMainField();
+                else field = fieldHolder.getFieldHolder().getSubField();
 
                 switch (type) {
                     case EQUAL:
@@ -55,23 +54,21 @@ public enum EnumCheckList {
                                 throwException();
                         }
                 }
-                whereStatement = whereStatement.getNext();
             }
-            return true;
         }
     };
 
     String errorMsg;
 
-    EnumCheckList(String msg) {
+    QueryChecklist(String msg) {
         errorMsg = msg;
     }
 
-    public abstract <T> boolean check(Flux<T> flux) throws Exception;
+    public abstract <T> void check(Flux<T> flux) throws QueryException;
 
 
-    public void throwException() throws Exception {
-        throw new Exception(errorMsg);
+    public void throwException() throws HibernateException {
+        throw new HibernateException(errorMsg);
     }
 
 

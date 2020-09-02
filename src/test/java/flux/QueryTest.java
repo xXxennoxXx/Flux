@@ -5,6 +5,8 @@ import flux.translators.Dialect;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.util.List;
+
 import static flux.utils.StringUtil.show;
 
 public class QueryTest {
@@ -13,7 +15,12 @@ public class QueryTest {
 
     @BeforeClass
     public static void init() {
-        flux = new Flux<>(Dialect.HIBERNATE, Movie::new);
+        flux = new Flux<Movie>(Dialect.HIBERNATE, Movie::new) {
+            @Override
+            public List<Movie> toList() throws Exception {
+                return null;
+            }
+        };
     }
 
     @Test
@@ -34,7 +41,7 @@ public class QueryTest {
     }
 
     @Test
-    public void test3() throws Exception {
+    public void test3() {
         show(
                 flux
                         .select(Movie::getId, Movie::getTitle)
@@ -62,7 +69,7 @@ public class QueryTest {
                 flux
                         .select(Movie::getId, Movie::getTitle)
                         .where(e -> e.getGenre().getName())
-                        .in("Matrix", "Batman")
+                        .in("Matrix", "Batman",1)
                         .toQuery()
         );
     }
