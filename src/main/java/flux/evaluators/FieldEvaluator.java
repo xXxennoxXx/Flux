@@ -1,22 +1,36 @@
 package flux.evaluators;
 
+import flux.FluxProperties;
 import flux.fieldholders.FieldHolder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 public class FieldEvaluator<T> {
-
+    private static final Logger logger = LoggerFactory.getLogger(FieldEvaluator.class);
     private static final String JAVA_PACKAGE_REGEX = "(java.).*";
+    private static final int QUERY_DEPTH;
     private Supplier<T> supplier;
     private Function<T, Object> function;
     private T t;
+
+    static {
+        String queryDepth = FluxProperties
+                .getProperties(
+                        FluxProperties.QUERY_DEPTH);
+        if (queryDepth != null && !queryDepth.isEmpty())
+            QUERY_DEPTH = Integer.parseInt(queryDepth);
+        else
+            QUERY_DEPTH = 5;
+        logger.debug("Query depth: " + QUERY_DEPTH);
+    }
 
     public FieldEvaluator(Supplier<T> supplier) {
         this.supplier = supplier;
@@ -28,6 +42,8 @@ public class FieldEvaluator<T> {
         this.function = function;
         initializeParameterClassAttribute();
         Field field = null;
+
+
         for (Field f : getParameterClassFields()) {
             field = evaluateWhichAttribute(t, f);
             if (field != null)
@@ -137,6 +153,19 @@ public class FieldEvaluator<T> {
 
     private Field[] getParameterClassFields() {
         return t.getClass().getDeclaredFields();
+    }
+
+    private List<Field> getClassFields(Class<?> c, boolean javaPack) {
+        return Arrays.stream(c
+                .getDeclaredFields())
+                .filter(f -> {
+                    if (javaPack)
+                        return isFieldIsJavaType(f);
+                    return true;
+                })
+                .filter(f -> !Modifier.isFinal(f.getModifiers()))
+                .filter(f -> !Modifier.isStatic(f.getModifiers()))
+                .collect(Collectors.toList());
     }
 
 }
